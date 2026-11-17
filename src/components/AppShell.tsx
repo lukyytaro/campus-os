@@ -452,9 +452,15 @@ export function AppShell({ children }: { children: ReactNode }) {
           </div>
         </header>
 
-        {/* Konten */}
+        {/* Konten — di-remount setiap pathname berubah agar transisi
+            masuk halaman (fade + sedikit slide) terputar tiap navigasi. */}
         <main className="w-full px-4 pt-6 pb-28 md:ml-60 md:w-[calc(100%-15rem)] md:px-8 md:pt-8 md:pb-12">
-          <div className="mx-auto w-full max-w-3xl md:max-w-4xl">{children}</div>
+          <div
+            key={pathname}
+            className="animate-page-enter mx-auto w-full max-w-3xl md:max-w-4xl"
+          >
+            {children}
+          </div>
         </main>
 
         {/* Bottom navigation mobile */}

@@ -39,6 +39,66 @@ img {
   outline-color: rgb(255 255 255 / 0.1);
 }
 
+/* Animasi masuk halaman dan kemunculan konten — CSS-only, cepat dan
+   halus (150–250ms, ease-out). Tunduk pada aturan prefers-reduced-motion
+   di bawah (durasi dipaksa 0,01ms bila pengguna mematikan gerakan). */
+@keyframes page-enter {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes rise-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Transisi antar halaman: dipakai wrapper konten di AppShell yang
+   di-remount setiap pathname berubah (key={pathname}). */
+.animate-page-enter {
+  animation: page-enter 200ms ease-out both;
+}
+
+/* Kemunculan kartu/daftar berjenjang (dipakai beranda). */
+.animate-rise-in {
+  animation: rise-in 220ms ease-out both;
+}
+
+.anim-delay-1 {
+  animation-delay: 40ms;
+}
+
+.anim-delay-2 {
+  animation-delay: 80ms;
+}
+
+.anim-delay-3 {
+  animation-delay: 120ms;
+}
+
+.anim-delay-4 {
+  animation-delay: 160ms;
+}
+
+.anim-delay-5 {
+  animation-delay: 200ms;
+}
+
+.anim-delay-6 {
+  animation-delay: 240ms;
+}
+
 /* Kurangi gerakan bila pengguna mengaturnya di sistem. */
 @media (prefers-reduced-motion: reduce) {
   *,

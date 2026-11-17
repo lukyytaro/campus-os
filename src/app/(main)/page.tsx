@@ -223,7 +223,7 @@ export default function DashboardPage() {
   return (
     <div className="space-y-6">
       {/* Sapaan */}
-      <header>
+      <header className="animate-rise-in">
         <h1 className="text-2xl font-bold tracking-tight text-zinc-900 [text-wrap:balance] md:text-3xl dark:text-zinc-50">
           {greeting(today)}
           {firstName ? `, ${firstName}` : ""}.
@@ -238,7 +238,7 @@ export default function DashboardPage() {
       {/* Ringkasan IPK */}
       <section
         aria-label="Ringkasan IPK"
-        className="rounded-2xl border border-zinc-200 bg-white p-5 md:p-6 dark:border-zinc-800 dark:bg-zinc-900"
+        className="animate-rise-in anim-delay-1 rounded-2xl border border-zinc-200 bg-white p-5 md:p-6 dark:border-zinc-800 dark:bg-zinc-900"
       >
         <div className="flex flex-wrap items-end justify-between gap-4">
           <div>
@@ -252,7 +252,7 @@ export default function DashboardPage() {
               </span>
             </p>
           </div>
-          <div className="flex gap-8">
+          <div className="flex flex-wrap gap-8">
             <div>
               <p className="text-sm text-zinc-500 dark:text-zinc-400">
                 IP Semester {activeSemester}
@@ -283,7 +283,7 @@ export default function DashboardPage() {
       </section>
 
       {/* Aksi cepat */}
-      <div className="flex flex-wrap gap-2">
+      <div className="animate-rise-in anim-delay-2 flex flex-wrap gap-2">
         <Link
           href="/tugas?baru=1"
           className="inline-flex h-10 items-center gap-2 rounded-lg bg-blue-600 px-4 text-sm font-medium text-white shadow-sm transition-colors hover:bg-blue-700"
@@ -306,12 +306,15 @@ export default function DashboardPage() {
 
       {/* m10: keempat modul dibedakan karakternya — garis waktu jadwal,
           daftar deadline dengan chip tanggal, angka besar target, dan
-          donat progres — dalam grid 12 kolom yang tidak simetris. */}
-      <div className="grid gap-4 md:grid-cols-12">
+          donat progres — dalam grid 12 kolom yang tidak simetris.
+          grid-cols-1 (minmax(0,1fr)) + min-w-0 pada tiap section
+          mencegah kolom implisit `auto` melebar mengikuti min-content
+          judul tugas/jadwal di layar sempit (overflow horizontal). */}
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-12">
         {/* Jadwal hari ini — garis waktu dengan aksen jam */}
         <section
           aria-label={`Jadwal hari ini, ${todayName}`}
-          className="rounded-2xl border border-zinc-200 bg-white p-5 md:col-span-7 dark:border-zinc-800 dark:bg-zinc-900"
+          className="animate-rise-in anim-delay-3 min-w-0 rounded-2xl border border-zinc-200 bg-white p-5 md:col-span-7 dark:border-zinc-800 dark:bg-zinc-900"
         >
           <div className="flex items-baseline justify-between gap-2">
             <h2 className="flex items-center gap-2 text-base font-semibold text-zinc-900 dark:text-zinc-50">
@@ -389,7 +392,7 @@ export default function DashboardPage() {
         {/* Deadline mendekat — chip tanggal kalender + toggle selesai */}
         <section
           aria-label="Deadline mendekat"
-          className="rounded-2xl border border-zinc-200 bg-white p-5 md:col-span-5 dark:border-zinc-800 dark:bg-zinc-900"
+          className="animate-rise-in anim-delay-4 min-w-0 rounded-2xl border border-zinc-200 bg-white p-5 md:col-span-5 dark:border-zinc-800 dark:bg-zinc-900"
         >
           <div className="flex items-baseline justify-between gap-2">
             <h2 className="flex items-center gap-2 text-base font-semibold text-zinc-900 dark:text-zinc-50">
@@ -478,7 +481,7 @@ export default function DashboardPage() {
         {/* Target minggu ini — angka besar + progres */}
         <section
           aria-label="Target belajar minggu ini"
-          className="rounded-2xl border border-zinc-200 bg-white p-5 md:col-span-5 dark:border-zinc-800 dark:bg-zinc-900"
+          className="animate-rise-in anim-delay-5 min-w-0 rounded-2xl border border-zinc-200 bg-white p-5 md:col-span-5 dark:border-zinc-800 dark:bg-zinc-900"
         >
           <div className="flex items-baseline justify-between gap-2">
             <h2 className="flex items-center gap-2 text-base font-semibold text-zinc-900 dark:text-zinc-50">
@@ -537,7 +540,7 @@ export default function DashboardPage() {
         {/* Progres tugas — donat + legenda */}
         <section
           aria-label="Progres tugas"
-          className="rounded-2xl border border-zinc-200 bg-white p-5 md:col-span-7 dark:border-zinc-800 dark:bg-zinc-900"
+          className="animate-rise-in anim-delay-6 min-w-0 rounded-2xl border border-zinc-200 bg-white p-5 md:col-span-7 dark:border-zinc-800 dark:bg-zinc-900"
         >
           <div className="flex items-baseline justify-between gap-2">
             <h2 className="flex items-center gap-2 text-base font-semibold text-zinc-900 dark:text-zinc-50">

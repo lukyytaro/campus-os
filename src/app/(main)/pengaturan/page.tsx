@@ -21,7 +21,7 @@ import {
   requestNotificationPermission,
   setRemindersEnabled,
 } from "@/lib/reminders";
-import { resetToSampleData } from "@/lib/seed";
+import { clearAllUserData, resetToSampleData } from "@/lib/seed";
 import { saveThemeChoice } from "@/lib/theme";
 import type { ThemeChoice } from "@/lib/types";
 
@@ -58,6 +58,8 @@ export default function PengaturanPage() {
   const [backingUp, setBackingUp] = useState(false);
   const [resetOpen, setResetOpen] = useState(false);
   const [resetting, setResetting] = useState(false);
+  const [clearOpen, setClearOpen] = useState(false);
+  const [clearing, setClearing] = useState(false);
 
   // Keluar
   const [signingOut, setSigningOut] = useState(false);
@@ -174,6 +176,22 @@ export default function PengaturanPage() {
       toast(translateError(err, "Gagal mereset data."), "error");
     } finally {
       setResetting(false);
+    }
+  }
+
+  async function handleClearAll() {
+    setClearing(true);
+    try {
+      await clearAllUserData(supabase, user.id);
+      await refreshProfile();
+      setClearOpen(false);
+      toast("Semua data dihapus. Mulai dari kosong.");
+      router.push("/");
+      router.refresh();
+    } catch (err) {
+      toast(translateError(err, "Gagal menghapus data."), "error");
+    } finally {
+      setClearing(false);
     }
   }
 
@@ -405,6 +423,23 @@ export default function PengaturanPage() {
               Reset ke data contoh
             </Button>
           </div>
+          <div className="flex flex-wrap items-center justify-between gap-3 border-t border-zinc-100 pt-4 dark:border-zinc-800">
+            <div className="min-w-0">
+              <p className="text-[15px] font-medium text-red-700 dark:text-red-400">
+                Hapus semua data
+              </p>
+              <p className="mt-0.5 text-sm text-zinc-500 [text-wrap:pretty] dark:text-zinc-400">
+                Menghapus seluruh datamu — mata kuliah, jadwal, tugas,
+                catatan (termasuk lampirannya), nilai, target, dan log
+                belajar — dan memulai dari kosong. Profil dan semester
+                aktif tidak berubah. Tindakan ini tidak bisa dibatalkan —
+                unduh backup dulu bila perlu.
+              </p>
+            </div>
+            <Button variant="danger" onClick={() => setClearOpen(true)}>
+              Hapus semua data
+            </Button>
+          </div>
         </div>
       </section>
 
@@ -435,6 +470,17 @@ export default function PengaturanPage() {
         confirmLabel="Ya, reset dataku"
         danger
         loading={resetting}
+      />
+
+      <ConfirmDialog
+        open={clearOpen}
+        onClose={() => setClearOpen(false)}
+        onConfirm={handleClearAll}
+        title="Hapus semua data?"
+        message="Semua mata kuliah, jadwal, tugas, catatan (termasuk lampirannya), nilai, target, dan log belajarmu akan dihapus permanen dan tidak diganti data apa pun. Profilmu dan semester aktif tetap dipertahankan. Tindakan ini tidak bisa dibatalkan."
+        confirmLabel="Ya, hapus semua data"
+        danger
+        loading={clearing}
       />
     </div>
   );

@@ -293,9 +293,10 @@ Catatan: uji-t dipakai saat simpangan baku populasi tidak diketahui dan sampel k
   markSeeded(userId);
 }
 
-/** Hapus semua data pengguna, lalu seed ulang data contoh.
- *  Dipanggil tombol "Reset ke data contoh" setelah dialog konfirmasi. */
-export async function resetToSampleData(
+/** Hapus semua data pengguna (tujuh tabel + lampiran Storage).
+ *  Dipakai bersama oleh resetToSampleData (lalu seed ulang) dan
+ *  clearAllUserData (berhenti di sini, tanpa seed ulang). */
+async function deleteAllUserData(
   supabase: SupabaseClient,
   userId: string,
 ): Promise<void> {
@@ -330,6 +331,26 @@ export async function resetToSampleData(
   } catch {
     // Abaikan — file lama di bucket privat hanya bisa diakses pemiliknya.
   }
+}
+
+/** Hapus semua data pengguna dan biarkan akun mulai dari kosong.
+ *  Dipanggil tombol "Hapus semua data" setelah dialog konfirmasi.
+ *  Berbeda dengan resetToSampleData: tidak me-re-seed data contoh dan
+ *  tidak mengubah profil (semester aktif dibiarkan apa adanya). */
+export async function clearAllUserData(
+  supabase: SupabaseClient,
+  userId: string,
+): Promise<void> {
+  await deleteAllUserData(supabase, userId);
+}
+
+/** Hapus semua data pengguna, lalu seed ulang data contoh.
+ *  Dipanggil tombol "Reset ke data contoh" setelah dialog konfirmasi. */
+export async function resetToSampleData(
+  supabase: SupabaseClient,
+  userId: string,
+): Promise<void> {
+  await deleteAllUserData(supabase, userId);
   await seedSampleData(supabase, userId);
 }
 
