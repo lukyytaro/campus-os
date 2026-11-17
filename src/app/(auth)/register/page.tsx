@@ -70,7 +70,7 @@ export default function RegisterPage() {
   if (emailSent) {
     return (
       <>
-        <h1 className="text-2xl font-bold tracking-tight text-zinc-900 [text-wrap:balance] dark:text-zinc-50">
+        <h1 className="font-serif text-2xl font-semibold tracking-tight text-zinc-900 [text-wrap:balance] dark:text-zinc-50">
           Periksa emailmu
         </h1>
         <p className="mt-2 text-[15px] leading-relaxed text-zinc-600 [text-wrap:pretty] dark:text-zinc-400">
@@ -97,7 +97,7 @@ export default function RegisterPage() {
 
   return (
     <>
-      <h1 className="text-2xl font-bold tracking-tight text-zinc-900 [text-wrap:balance] dark:text-zinc-50">
+      <h1 className="font-serif text-2xl font-semibold tracking-tight text-zinc-900 [text-wrap:balance] dark:text-zinc-50">
         Buat akun CampusOS
       </h1>
       <p className="mt-2 text-[15px] text-zinc-600 [text-wrap:pretty] dark:text-zinc-400">

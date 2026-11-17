@@ -75,17 +75,12 @@ function isActive(pathname: string, href: string): boolean {
   return pathname === href || pathname.startsWith(`${href}/`);
 }
 
-function Logo({ compact = false }: { compact?: boolean }) {
+function Logo() {
   return (
-    <Link href="/" className="flex items-center gap-2.5">
-      <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-blue-600 text-white">
-        <Icon name="cap" className="h-5 w-5" />
+    <Link href="/" className="flex items-center">
+      <span className="font-serif text-[28px] leading-none font-bold tracking-tight text-zinc-900 dark:text-zinc-50">
+        campusos<span className="text-gold-500">.</span>
       </span>
-      {!compact && (
-        <span className="text-lg font-bold tracking-tight text-zinc-900 dark:text-zinc-50">
-          CampusOS
-        </span>
-      )}
     </Link>
   );
 }
@@ -436,22 +431,27 @@ export function AppShell({ children }: { children: ReactNode }) {
             konten di y=0 tertutup status bar; tanpa inset ini logo dan
             judul tertumpuk jam/baterai. Di browser desktop inset = 0
             sehingga tampilan tidak berubah. */}
-        <header className="sticky top-0 z-40 flex items-center justify-between gap-3 border-b border-zinc-200 bg-white/95 px-4 pt-[calc(env(safe-area-inset-top,0px)_+_0.75rem)] pb-3 backdrop-blur md:hidden dark:border-zinc-800 dark:bg-zinc-900/95">
+        <header className="sticky top-0 z-40 flex items-center justify-between gap-3 border-b border-zinc-200 bg-zinc-50/95 px-4 pt-[calc(env(safe-area-inset-top,0px)_+_0.75rem)] pb-3 backdrop-blur md:hidden dark:border-zinc-800 dark:bg-zinc-950/95">
           <Logo />
-          <div className="flex items-center gap-1">
-            <Link
-              href="/cari"
-              aria-label="Pencarian"
-              className="flex h-10 w-10 items-center justify-center rounded-lg text-zinc-600 transition-colors hover:bg-zinc-100 dark:text-zinc-400 dark:hover:bg-zinc-800"
-            >
-              <Icon name="search" className="h-5 w-5" />
-            </Link>
+          <div className="flex items-center gap-2">
             <Link
               href="/pengaturan"
               aria-label="Pengaturan"
-              className="flex h-10 w-10 items-center justify-center rounded-lg text-zinc-600 transition-colors hover:bg-zinc-100 dark:text-zinc-400 dark:hover:bg-zinc-800"
+              className="flex items-center gap-2 rounded-full bg-zinc-100 py-1.5 pr-3.5 pl-1.5 transition-colors hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:bg-zinc-700"
             >
-              <Icon name="settings" className="h-5 w-5" />
+              <span className="flex h-7 w-7 items-center justify-center rounded-full bg-blue-600 text-xs font-bold text-white dark:bg-gold-500 dark:text-zinc-950">
+                {initials}
+              </span>
+              <span className="max-w-24 truncate text-sm font-semibold text-zinc-900 dark:text-zinc-50">
+                {profile.full_name?.split(" ")[0] || "Mahasiswa"}
+              </span>
+            </Link>
+            <Link
+              href="/cari"
+              aria-label="Pencarian"
+              className="flex h-10 w-10 items-center justify-center rounded-full text-zinc-600 transition-colors hover:bg-zinc-100 dark:text-zinc-400 dark:hover:bg-zinc-800"
+            >
+              <Icon name="search" className="h-5 w-5" />
             </Link>
           </div>
         </header>
@@ -467,9 +467,10 @@ export function AppShell({ children }: { children: ReactNode }) {
           </div>
         </main>
 
-        {/* Bottom navigation mobile */}
+        {/* Bottom navigation mobile — latar kertas, item aktif navy
+            dengan titik emas di bawahnya (gaya mockup Biru Malam). */}
         <nav
-          className="fixed inset-x-0 bottom-0 z-40 border-t border-zinc-200 bg-white/95 pb-[env(safe-area-inset-bottom)] backdrop-blur md:hidden dark:border-zinc-800 dark:bg-zinc-900/95"
+          className="fixed inset-x-0 bottom-0 z-40 border-t border-zinc-200 bg-zinc-50/95 pb-[env(safe-area-inset-bottom)] backdrop-blur md:hidden dark:border-zinc-800 dark:bg-zinc-950/95"
           aria-label="Navigasi bawah"
         >
           <div className="mx-auto grid max-w-md grid-cols-5">
@@ -480,7 +481,7 @@ export function AppShell({ children }: { children: ReactNode }) {
                   key={item.href}
                   href={item.href}
                   aria-current={active ? "page" : undefined}
-                  className={`flex min-h-16 flex-col items-center justify-center gap-1 px-1 text-[11px] font-medium transition-colors ${
+                  className={`relative flex min-h-16 flex-col items-center justify-center gap-1 px-1 text-[11px] font-medium transition-colors ${
                     active
                       ? "text-blue-700 dark:text-blue-300"
                       : "text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100"
@@ -488,6 +489,12 @@ export function AppShell({ children }: { children: ReactNode }) {
                 >
                   <Icon name={item.icon} className="h-6 w-6" />
                   {item.label}
+                  {active && (
+                    <span
+                      aria-hidden="true"
+                      className="absolute bottom-1 h-1 w-1 rounded-full bg-gold-500"
+                    />
+                  )}
                 </Link>
               );
             })}
@@ -495,7 +502,7 @@ export function AppShell({ children }: { children: ReactNode }) {
               type="button"
               onClick={() => setMoreOpen(true)}
               aria-expanded={moreOpen}
-              className={`flex min-h-16 flex-col items-center justify-center gap-1 px-1 text-[11px] font-medium transition-colors ${
+              className={`relative flex min-h-16 flex-col items-center justify-center gap-1 px-1 text-[11px] font-medium transition-colors ${
                 MORE_NAV.some((item) => isActive(pathname, item.href))
                   ? "text-blue-700 dark:text-blue-300"
                   : "text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100"
@@ -507,6 +514,12 @@ export function AppShell({ children }: { children: ReactNode }) {
                 <span className="h-1.5 w-1.5 rounded-full bg-current" />
               </span>
               Lainnya
+              {MORE_NAV.some((item) => isActive(pathname, item.href)) && (
+                <span
+                  aria-hidden="true"
+                  className="absolute bottom-1 h-1 w-1 rounded-full bg-gold-500"
+                />
+              )}
             </button>
           </div>
         </nav>

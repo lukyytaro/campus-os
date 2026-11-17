@@ -91,7 +91,7 @@ function LoginForm() {
 
   return (
     <>
-      <h1 className="text-2xl font-bold tracking-tight text-zinc-900 [text-wrap:balance] dark:text-zinc-50">
+      <h1 className="font-serif text-2xl font-semibold tracking-tight text-zinc-900 [text-wrap:balance] dark:text-zinc-50">
         Masuk ke CampusOS
       </h1>
       <p className="mt-2 text-[15px] text-zinc-600 [text-wrap:pretty] dark:text-zinc-400">

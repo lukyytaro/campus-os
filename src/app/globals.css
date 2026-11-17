@@ -1,13 +1,56 @@
 @import "tailwindcss";
 
+/* Font lokal didefinisikan di ./fonts.css (data URI, offline di APK). */
+
 /* Dark mode berbasis class .dark di <html> (diatur skrip tema di layout,
    mengikuti pilihan Sistem / Terang / Gelap di Pengaturan). */
 @custom-variant dark (&:where(.dark, .dark *));
 
-@theme inline {
-  --font-sans: var(--font-geist-sans), ui-sans-serif, system-ui, -apple-system,
+/* Tema "Biru Malam" (v1.3): kertas hangat + navy + emas. Skala zinc dan
+   biru Tailwind dipetakan ulang ke palet ini, sehingga seluruh halaman
+   yang memakai kelas warna zinc dan biru mengikuti tema tanpa mengubah
+   tiap file. Tiap shade dipilih agar bekerja di kedua perannya: mis.
+   zinc-900 adalah tinta teks di mode terang sekaligus permukaan kartu di
+   mode gelap — kedua perannya memakai navy yang hampir hitam. Warna
+   semantik (emerald/amber/red/violet) tidak diubah. */
+@theme {
+  --font-sans: "Inter", ui-sans-serif, system-ui, -apple-system,
     "Segoe UI", Roboto, sans-serif;
-  --font-mono: var(--font-geist-mono), ui-monospace, "SF Mono", Menlo, monospace;
+  --font-serif: "Newsreader", Georgia, "Times New Roman", serif;
+  --font-mono: ui-monospace, "SF Mono", Menlo, monospace;
+
+  /* Kertas & tinta */
+  --color-zinc-50: #f4f2ec; /* latar halaman terang / teks terang di mode gelap */
+  --color-zinc-100: #e9e6dc; /* keping/chip terang / teks di mode gelap */
+  --color-zinc-200: #e4e0d2; /* garis tepi kartu terang */
+  --color-zinc-300: #d8d3c2; /* garis tepi input terang */
+  --color-zinc-400: #8b8fa0; /* teks redup (kedua mode) */
+  --color-zinc-500: #6e7488; /* teks sekunder terang */
+  --color-zinc-600: #5b6478; /* teks sekunder gelap */
+  --color-zinc-700: #3a445c; /* label terang / garis tepi input gelap */
+  --color-zinc-800: #232f4a; /* permukaan sekunder gelap / garis tepi gelap */
+  --color-zinc-900: #182238; /* tinta terang / permukaan kartu gelap */
+  --color-zinc-950: #0f1626; /* latar halaman gelap / blok kode */
+
+  /* Navy */
+  --color-blue-50: #eef0f5;
+  --color-blue-100: #dde3ee;
+  --color-blue-200: #c3cee2;
+  --color-blue-300: #b9c6e4;
+  --color-blue-400: #93a8d6;
+  --color-blue-500: #5b7ab5;
+  --color-blue-600: #1b2a4a;
+  --color-blue-700: #16223a;
+  --color-blue-800: #0f1830;
+  --color-blue-900: #0b1226;
+
+  /* Emas aksen */
+  --color-gold-100: #f7f0d3;
+  --color-gold-300: #ecd28a;
+  --color-gold-400: #e8c95a;
+  --color-gold-500: #c9a227;
+  --color-gold-600: #9a7b1a;
+  --color-gold-700: #7a5f14;
 }
 
 html {
@@ -21,7 +64,7 @@ body {
 }
 
 ::selection {
-  background-color: rgb(37 99 235 / 0.2);
+  background-color: rgb(201 162 39 / 0.25);
 }
 
 /* Angka tabular untuk semua elemen yang menampilkan angka dinamis. */

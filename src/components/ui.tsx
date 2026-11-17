@@ -323,7 +323,7 @@ export function Modal({
         }`}
       >
         <div className="sticky top-0 flex items-center justify-between gap-4 border-b border-zinc-200 bg-white px-5 py-4 dark:border-zinc-800 dark:bg-zinc-900">
-          <h2 className="text-base font-semibold text-zinc-900 [text-wrap:balance] dark:text-zinc-50">
+          <h2 className="font-serif text-lg font-semibold text-zinc-900 [text-wrap:balance] dark:text-zinc-50">
             {title}
           </h2>
           <button

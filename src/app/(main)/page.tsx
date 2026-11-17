@@ -6,7 +6,6 @@ import { useApp } from "@/components/AppShell";
 import { TaskDonutChart } from "@/components/charts";
 import { Icon } from "@/components/icons";
 import {
-  Badge,
   EmptyState,
   ErrorBanner,
   ProgressBar,
@@ -21,10 +20,9 @@ import {
   fetchStudyLogs,
   fetchTasks,
 } from "@/lib/data";
-import { cumulativeGpa, semesterGpa } from "@/lib/gpa";
+import { semesterGpa } from "@/lib/gpa";
 import {
   dueLabel,
-  formatDateLong,
   formatHours,
   formatScore,
   formatTime,
@@ -37,6 +35,7 @@ import { useMountLoad } from "@/lib/use-mount-load";
 import {
   DAY_NAMES,
   PRIORITY_LABEL,
+  SCHEDULE_TYPE_LABEL,
   type Course,
   type Goal,
   type Grade,
@@ -45,12 +44,32 @@ import {
   type Task,
 } from "@/lib/types";
 
-function greeting(now: Date): string {
-  const hour = now.getHours();
-  if (hour < 11) return "Selamat pagi";
-  if (hour < 15) return "Selamat siang";
-  if (hour < 19) return "Selamat sore";
-  return "Selamat malam";
+/** "Selasa, 17 November" — tanpa tahun, sesuai gaya mockup Biru Malam. */
+const DATE_LINE_FMT = new Intl.DateTimeFormat("id-ID", {
+  weekday: "long",
+  day: "numeric",
+  month: "long",
+});
+
+/** Status jadwal hari ini berdasarkan jam sekarang. */
+function scheduleStatus(
+  s: Schedule,
+  now: Date,
+  isNext: boolean,
+): { label: string; gold: boolean } {
+  const [sh, sm] = s.start_time.split(":").map(Number);
+  const [eh, em] = s.end_time.split(":").map(Number);
+  const start = new Date(now);
+  start.setHours(sh, sm, 0, 0);
+  const end = new Date(now);
+  end.setHours(eh, em, 0, 0);
+  const nowMs = now.getTime();
+  if (nowMs > end.getTime()) return { label: "Selesai", gold: false };
+  if (nowMs >= start.getTime()) return { label: "Berlangsung", gold: true };
+  if (isNext) return { label: "Berikutnya", gold: true };
+  if (sh < 11) return { label: "Pagi", gold: true };
+  if (sh < 15) return { label: "Siang", gold: true };
+  return { label: "Sore", gold: true };
 }
 
 export default function DashboardPage() {
@@ -119,10 +138,6 @@ export default function DashboardPage() {
   );
 
   const activeSemester = profile.active_semester;
-  const ipk = useMemo(
-    () => cumulativeGpa(grades, coursesById),
-    [grades, coursesById],
-  );
   const ipSemester = useMemo(
     () =>
       semesterGpa(
@@ -131,6 +146,49 @@ export default function DashboardPage() {
       ),
     [grades, coursesById, activeSemester],
   );
+
+  // Meta hero: matkul & SKS semester aktif, tugas yang masih berjalan.
+  const semesterCourses = useMemo(
+    () => courses.filter((c) => c.semester === activeSemester),
+    [courses, activeSemester],
+  );
+  const semesterSks = useMemo(
+    () => semesterCourses.reduce((sum, c) => sum + c.sks, 0),
+    [semesterCourses],
+  );
+  const activeTasks = useMemo(
+    () => tasks.filter((t) => t.status !== "selesai").length,
+    [tasks],
+  );
+
+  // Tugas jatuh tempo minggu ini (Senin 00.00 – Senin depan 00.00):
+  // dipakai bilah progres di hero dan kartu cincin "Tugas minggu ini".
+  const weekTasks = useMemo(() => {
+    const monday = startOfWeek(today);
+    const nextMonday = new Date(monday);
+    nextMonday.setDate(monday.getDate() + 7);
+    return tasks.filter((t) => {
+      const due = new Date(t.due_date).getTime();
+      return due >= monday.getTime() && due < nextMonday.getTime();
+    });
+  }, [tasks, today]);
+  const weekDone = useMemo(
+    () => weekTasks.filter((t) => t.status === "selesai").length,
+    [weekTasks],
+  );
+  const weekPct =
+    weekTasks.length > 0
+      ? Math.round((weekDone / weekTasks.length) * 100)
+      : 0;
+
+  // Deadline terdekat: tugas belum selesai dengan due_date paling awal.
+  const nearestTask = useMemo(() => {
+    const open = tasks.filter((t) => t.status !== "selesai");
+    if (open.length === 0) return null;
+    return [...open].sort(
+      (a, b) => +new Date(a.due_date) - +new Date(b.due_date),
+    )[0];
+  }, [tasks]);
 
   // Jadwal hari ini: kelas rutin hari ini + agenda bertanggal hari ini.
   const todaySchedules = useMemo(() => {
@@ -145,6 +203,17 @@ export default function DashboardPage() {
       )
       .sort((a, b) => a.start_time.localeCompare(b.start_time));
   }, [schedules, today]);
+
+  // Indeks jadwal mendatang paling awal hari ini (untuk tag "Berikutnya").
+  const nextScheduleIdx = useMemo(() => {
+    const nowMs = today.getTime();
+    return todaySchedules.findIndex((s) => {
+      const [h, m] = s.start_time.split(":").map(Number);
+      const start = new Date(today);
+      start.setHours(h, m, 0, 0);
+      return start.getTime() > nowMs;
+    });
+  }, [todaySchedules, today]);
 
   // Deadline mendekat: belum selesai, jatuh tempo dalam 7 hari (termasuk terlewat).
   const upcomingDeadlines = useMemo(() => {
@@ -198,13 +267,11 @@ export default function DashboardPage() {
   if (loading) {
     return (
       <div className="space-y-6">
-        <Skeleton className="h-9 w-72" />
-        <Skeleton className="h-5 w-48" />
-        <Skeleton className="h-36 w-full" />
-        <div className="grid gap-4 md:grid-cols-2">
-          <Skeleton className="h-64 w-full" />
-          <Skeleton className="h-64 w-full" />
-        </div>
+        <Skeleton className="h-4 w-44" />
+        <Skeleton className="h-11 w-56" />
+        <Skeleton className="h-64 w-full" />
+        <Skeleton className="h-24 w-full" />
+        <Skeleton className="h-48 w-full" />
       </div>
     );
   }
@@ -212,75 +279,185 @@ export default function DashboardPage() {
   if (error) {
     return (
       <div className="space-y-6">
-        <h1 className="text-2xl font-bold tracking-tight">Beranda</h1>
+        <h1 className="font-serif text-2xl font-semibold tracking-tight">
+          Beranda
+        </h1>
         <ErrorBanner message={error} onRetry={handleRetry} />
       </div>
     );
   }
 
   const firstName = profile.full_name?.split(" ")[0] || "";
+  const dateLine = DATE_LINE_FMT.format(today).toUpperCase();
+  // Cincin progres: r=24 → keliling 150,8.
+  const ringOffset =
+    weekTasks.length > 0 ? 150.8 * (1 - weekDone / weekTasks.length) : 150.8;
 
   return (
     <div className="space-y-6">
-      {/* Sapaan */}
+      {/* Sapaan — tanggal kapital + serif besar, sesuai mockup. */}
       <header className="animate-rise-in">
-        <h1 className="text-2xl font-bold tracking-tight text-zinc-900 [text-wrap:balance] md:text-3xl dark:text-zinc-50">
-          {greeting(today)}
-          {firstName ? `, ${firstName}` : ""}.
-        </h1>
-        <p className="mt-1 text-[15px] text-zinc-500 dark:text-zinc-400">
-          {formatDateLong(today)}
-          {profile.program ? ` · ${profile.program}` : ""}
-          {` · Semester ${activeSemester}`}
+        <p className="text-[11.5px] font-semibold tracking-[2.6px] text-zinc-400 uppercase">
+          {dateLine}
         </p>
+        <h1 className="mt-1.5 font-serif text-[40px] leading-[1.05] font-semibold tracking-[-0.5px] text-zinc-900 [text-wrap:balance] dark:text-zinc-50">
+          Hai{firstName ? `, ${firstName}` : ""}.
+        </h1>
       </header>
 
-      {/* Ringkasan IPK */}
+      {/* Hero IPK — kartu navy dengan angka serif besar. */}
       <section
-        aria-label="Ringkasan IPK"
-        className="animate-rise-in anim-delay-1 rounded-2xl border border-zinc-200 bg-white p-5 md:p-6 dark:border-zinc-800 dark:bg-zinc-900"
+        aria-label="IPK semester ini"
+        className="animate-rise-in anim-delay-1 relative overflow-hidden rounded-[18px] bg-[linear-gradient(155deg,#1E2E52_0%,#121D33_100%)] p-[18px_22px_16px] text-[#F4F2EC] ring-1 ring-black/5 dark:ring-white/10"
       >
-        <div className="flex flex-wrap items-end justify-between gap-4">
+        <svg
+          aria-hidden="true"
+          className="absolute top-0.5 right-1.5 opacity-30"
+          width="110"
+          height="110"
+          viewBox="0 0 110 110"
+          fill="none"
+          stroke="#C9A227"
+          strokeWidth="1.4"
+        >
+          <circle cx="55" cy="55" r="44" />
+          <circle cx="55" cy="55" r="34" />
+          <path d="M55 30v50M30 55h50" opacity=".6" />
+        </svg>
+        <p className="text-[11.5px] font-bold tracking-[2.4px] text-[#B9C0D4] uppercase">
+          IPK Semester Ini
+        </p>
+        <p className="mt-2.5 flex items-baseline gap-2.5">
+          <span className="font-serif text-[52px] leading-none font-semibold tracking-[-1px] tabular-nums">
+            {ipSemester === null ? "—" : formatScore(ipSemester)}
+          </span>
+          <span className="text-[15px] text-[#B9C0D4]">dari 4,00</span>
+        </p>
+        <div className="mt-2.5 flex gap-4">
           <div>
-            <p className="text-sm font-medium text-zinc-500 dark:text-zinc-400">
-              Indeks Prestasi Kumulatif
-            </p>
-            <p className="mt-1 text-5xl font-bold tracking-tight text-zinc-900 tabular-nums dark:text-zinc-50">
-              {ipk === null ? "—" : formatScore(ipk)}
-              <span className="ml-1 text-lg font-medium text-zinc-400">
-                / 4,00
-              </span>
-            </p>
+            <b className="block font-serif text-[19px] leading-tight font-semibold tabular-nums">
+              {activeSemester}
+            </b>
+            <span className="text-[11px] font-semibold tracking-[0.4px] whitespace-nowrap text-[#B9C0D4] uppercase">
+              Semester
+            </span>
           </div>
-          <div className="flex flex-wrap gap-8">
-            <div>
-              <p className="text-sm text-zinc-500 dark:text-zinc-400">
-                IP Semester {activeSemester}
-              </p>
-              <p className="mt-0.5 text-xl font-semibold text-zinc-900 tabular-nums dark:text-zinc-50">
-                {ipSemester === null ? "—" : formatScore(ipSemester)}
-              </p>
-            </div>
-            <div>
-              <p className="text-sm text-zinc-500 dark:text-zinc-400">
-                Mata kuliah dinilai
-              </p>
-              <p className="mt-0.5 text-xl font-semibold text-zinc-900 tabular-nums dark:text-zinc-50">
-                {grades.length}
-              </p>
-            </div>
+          <div>
+            <b className="block font-serif text-[19px] leading-tight font-semibold tabular-nums">
+              {semesterCourses.length}
+            </b>
+            <span className="text-[11px] font-semibold tracking-[0.4px] whitespace-nowrap text-[#B9C0D4] uppercase">
+              Matkul
+            </span>
+          </div>
+          <div>
+            <b className="block font-serif text-[19px] leading-tight font-semibold tabular-nums">
+              {semesterSks}
+            </b>
+            <span className="text-[11px] font-semibold tracking-[0.4px] whitespace-nowrap text-[#B9C0D4] uppercase">
+              SKS
+            </span>
+          </div>
+          <div>
+            <b className="block font-serif text-[19px] leading-tight font-semibold tabular-nums">
+              {activeTasks}
+            </b>
+            <span className="text-[11px] font-semibold tracking-[0.4px] whitespace-nowrap text-[#B9C0D4] uppercase">
+              Tugas aktif
+            </span>
           </div>
         </div>
-        <div className="mt-5 border-t border-zinc-100 pt-4 dark:border-zinc-800">
+        <div className="my-3.5 h-px bg-[#F4F2EC]/20" />
+        <div className="flex items-baseline justify-between gap-2 text-[13.5px]">
+          <span>Tugas minggu ini</span>
+          <b className="text-[14.5px] text-gold-400">
+            {weekTasks.length === 0
+              ? "Tidak ada deadline"
+              : `${weekDone} dari ${weekTasks.length} selesai`}
+          </b>
+        </div>
+        <div
+          className="mt-2.5 h-[7px] overflow-hidden rounded-full bg-[#F4F2EC]/20"
+          role="progressbar"
+          aria-valuenow={weekPct}
+          aria-valuemin={0}
+          aria-valuemax={100}
+          aria-label="Progres tugas minggu ini"
+        >
+          <div
+            className="h-full rounded-full bg-gold-500 transition-[width] duration-300 ease-out"
+            style={{ width: `${weekPct}%` }}
+          />
+        </div>
+        <div className="mt-3.5">
           <Link
             href="/nilai"
-            className="inline-flex items-center gap-1.5 text-sm font-medium text-blue-700 hover:underline dark:text-blue-400"
+            className="inline-flex items-center gap-1.5 text-[13px] font-medium text-[#B9C0D4] hover:text-white hover:underline"
           >
             Lihat rincian nilai & IPK
             <Icon name="chevronRight" className="h-4 w-4" />
           </Link>
         </div>
       </section>
+
+      {/* Tugas minggu ini — kartu cincin + deadline terdekat. */}
+      <Link
+        href="/tugas"
+        aria-label="Tugas minggu ini, lihat semua tugas"
+        className="animate-rise-in anim-delay-2 flex items-center gap-4 rounded-2xl border border-zinc-200 bg-white p-4 transition-colors hover:border-zinc-300 dark:border-zinc-800 dark:bg-zinc-900 dark:hover:border-zinc-700"
+      >
+        <span className="relative h-[58px] w-[58px] shrink-0">
+          <svg
+            width="58"
+            height="58"
+            viewBox="0 0 58 58"
+            className="-rotate-90"
+            aria-hidden="true"
+          >
+            <circle
+              cx="29"
+              cy="29"
+              r="24"
+              fill="none"
+              strokeWidth="6"
+              className="stroke-[#ECEEF2] dark:stroke-zinc-800"
+            />
+            <circle
+              cx="29"
+              cy="29"
+              r="24"
+              fill="none"
+              strokeWidth="6"
+              strokeLinecap="round"
+              strokeDasharray="150.8"
+              strokeDashoffset={ringOffset}
+              className="stroke-blue-600 dark:stroke-gold-400"
+            />
+          </svg>
+          <span className="absolute inset-0 flex items-center justify-center text-[15px] font-bold text-zinc-900 tabular-nums dark:text-zinc-50">
+            {weekTasks.length === 0 ? "—" : `${weekDone}/${weekTasks.length}`}
+          </span>
+        </span>
+        <span className="min-w-0 flex-1">
+          <span className="block text-[16.5px] font-bold text-zinc-900 dark:text-zinc-50">
+            Tugas minggu ini
+          </span>
+          <span className="mt-0.5 block text-[13.5px] text-zinc-500 dark:text-zinc-400">
+            {weekTasks.length === 0
+              ? "Tidak ada tugas jatuh tempo minggu ini"
+              : `${weekDone} dari ${weekTasks.length} sudah selesai`}
+          </span>
+          <span className="mt-1 block text-[13px] font-semibold text-gold-600 dark:text-gold-400">
+            {nearestTask
+              ? `Deadline terdekat: ${nearestTask.title} · ${dueLabel(nearestTask.due_date)}`
+              : "Tidak ada deadline"}
+          </span>
+        </span>
+        <Icon
+          name="chevronRight"
+          className="h-5 w-5 shrink-0 text-zinc-400"
+        />
+      </Link>
 
       {/* Aksi cepat */}
       <div className="animate-rise-in anim-delay-2 flex flex-wrap gap-2">
@@ -304,101 +481,97 @@ export default function DashboardPage() {
         </Link>
       </div>
 
-      {/* m10: keempat modul dibedakan karakternya — garis waktu jadwal,
-          daftar deadline dengan chip tanggal, angka besar target, dan
-          donat progres — dalam grid 12 kolom yang tidak simetris.
-          grid-cols-1 (minmax(0,1fr)) + min-w-0 pada tiap section
-          mencegah kolom implisit `auto` melebar mengikuti min-content
-          judul tugas/jadwal di layar sempit (overflow horizontal). */}
-      <div className="grid grid-cols-1 gap-4 md:grid-cols-12">
-        {/* Jadwal hari ini — garis waktu dengan aksen jam */}
-        <section
-          aria-label={`Jadwal hari ini, ${todayName}`}
-          className="animate-rise-in anim-delay-3 min-w-0 rounded-2xl border border-zinc-200 bg-white p-5 md:col-span-7 dark:border-zinc-800 dark:bg-zinc-900"
-        >
-          <div className="flex items-baseline justify-between gap-2">
-            <h2 className="flex items-center gap-2 text-base font-semibold text-zinc-900 dark:text-zinc-50">
-              <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-zinc-100 text-zinc-600 dark:bg-zinc-800 dark:text-zinc-300">
-                <Icon name="calendar" className="h-4 w-4" />
-              </span>
-              Jadwal hari ini
-            </h2>
-            <Link
-              href="/jadwal"
-              className="text-sm font-medium text-blue-700 hover:underline dark:text-blue-400"
-            >
-              Semua jadwal
-            </Link>
-          </div>
-          {todaySchedules.length === 0 ? (
+      {/* Jadwal hari ini — daftar baris sesuai mockup. */}
+      <section
+        aria-label={`Jadwal hari ini, ${todayName}`}
+        className="animate-rise-in anim-delay-3 min-w-0"
+      >
+        <div className="flex items-baseline justify-between gap-2">
+          <h2 className="font-serif text-[26px] font-semibold tracking-[-0.5px] text-zinc-900 dark:text-zinc-50">
+            <span className="mr-1 align-super font-sans text-xs font-bold text-gold-500">
+              01
+            </span>
+            Jadwal hari ini
+          </h2>
+          <Link
+            href="/jadwal?baru=1"
+            className="shrink-0 text-[13.5px] font-semibold text-blue-700 hover:underline dark:text-blue-300"
+          >
+            + Tambah jadwal
+          </Link>
+        </div>
+        {todaySchedules.length === 0 ? (
+          <div className="mt-2.5 rounded-2xl border border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-900">
             <EmptyState
               icon={<Icon name="calendar" className="h-6 w-6" />}
               title="Tidak ada jadwal hari ini"
               message={`Tidak ada kuliah atau agenda pada hari ${todayName}. Nikmati waktu luangmu — atau pakai untuk mengejar tugas.`}
             />
-          ) : (
-            <ul className="mt-5">
-              {todaySchedules.map((s, idx) => {
-                const course = s.course_id
-                  ? coursesById.get(s.course_id)
-                  : undefined;
-                const isLast = idx === todaySchedules.length - 1;
-                return (
-                  <li key={s.id} className="relative flex gap-3 pb-5 last:pb-0">
-                    <div className="w-11 shrink-0 pt-0.5 text-right">
-                      <p className="text-sm font-semibold text-zinc-900 tabular-nums dark:text-zinc-50">
-                        {formatTime(s.start_time)}
-                      </p>
-                      <p className="text-xs text-zinc-400 tabular-nums">
-                        {formatTime(s.end_time)}
-                      </p>
-                    </div>
-                    <div className="relative flex w-4 shrink-0 justify-center">
-                      {!isLast && (
-                        <span
-                          aria-hidden="true"
-                          className="absolute top-3 -bottom-1 w-px bg-zinc-200 dark:bg-zinc-800"
-                        />
-                      )}
-                      <span
-                        aria-hidden="true"
-                        className="relative mt-1.5 h-2.5 w-2.5 shrink-0 rounded-full ring-4 ring-white dark:ring-zinc-900"
-                        style={{
-                          backgroundColor: course?.color ?? "#2563EB",
-                        }}
-                      />
-                    </div>
-                    <div className="min-w-0 flex-1">
-                      <p className="truncate text-[15px] font-medium text-zinc-900 dark:text-zinc-50">
-                        {s.title}
-                      </p>
-                      <p className="mt-0.5 truncate text-sm text-zinc-500 dark:text-zinc-400">
-                        {s.room ? `${s.room} · ` : ""}
-                        {course?.name ?? "Tanpa mata kuliah"}
-                      </p>
-                    </div>
-                    {s.type !== "kuliah" && (
-                      <Badge tone={s.type === "agenda" ? "violet" : "red"}>
-                        {s.type.toUpperCase()}
-                      </Badge>
-                    )}
-                  </li>
-                );
-              })}
-            </ul>
-          )}
-        </section>
+          </div>
+        ) : (
+          <ul className="mt-2.5 rounded-2xl border border-zinc-200 bg-white px-[18px] py-1 dark:border-zinc-800 dark:bg-zinc-900">
+            {todaySchedules.map((s, idx) => {
+              const course = s.course_id
+                ? coursesById.get(s.course_id)
+                : undefined;
+              const status = scheduleStatus(
+                s,
+                today,
+                idx === nextScheduleIdx,
+              );
+              const metaParts: string[] = [];
+              if (s.room) metaParts.push(s.room);
+              else if (course) metaParts.push(course.name);
+              if (s.type !== "kuliah")
+                metaParts.push(SCHEDULE_TYPE_LABEL[s.type]);
+              const meta =
+                metaParts.join(" · ") || "Tanpa mata kuliah";
+              return (
+                <li
+                  key={s.id}
+                  className="flex items-center gap-3 border-b border-[#EFEDE4] py-2.5 last:border-b-0 dark:border-zinc-800"
+                >
+                  <span className="w-[42px] shrink-0 font-serif text-[15px] font-semibold text-blue-700 tabular-nums dark:text-blue-300">
+                    {formatTime(s.start_time)}
+                  </span>
+                  <span className="min-w-0 flex-1">
+                    <span className="block truncate text-sm font-semibold text-zinc-900 dark:text-zinc-50">
+                      {s.title}
+                    </span>
+                    <span className="mt-0.5 block truncate text-xs text-zinc-400">
+                      {meta}
+                    </span>
+                  </span>
+                  <span
+                    className={`shrink-0 rounded-md px-2 py-1 text-[11px] font-bold tracking-[0.3px] ${
+                      status.gold
+                        ? "bg-gold-100 text-gold-600 dark:bg-gold-500/15 dark:text-gold-400"
+                        : "bg-blue-50 text-zinc-600 dark:bg-zinc-800 dark:text-zinc-300"
+                    }`}
+                  >
+                    {status.label}
+                  </span>
+                </li>
+              );
+            })}
+          </ul>
+        )}
+      </section>
 
+      {/* m10: ketiga modul di bawah dibedakan karakternya — daftar
+          deadline dengan chip tanggal, angka besar target, dan donat
+          progres — dalam grid 12 kolom yang tidak simetris.
+          grid-cols-1 (minmax(0,1fr)) + min-w-0 pada tiap section
+          mencegah kolom implisit `auto` melebar mengikuti min-content
+          judul tugas/jadwal di layar sempit (overflow horizontal). */}
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-12">
         {/* Deadline mendekat — chip tanggal kalender + toggle selesai */}
         <section
           aria-label="Deadline mendekat"
           className="animate-rise-in anim-delay-4 min-w-0 rounded-2xl border border-zinc-200 bg-white p-5 md:col-span-5 dark:border-zinc-800 dark:bg-zinc-900"
         >
           <div className="flex items-baseline justify-between gap-2">
-            <h2 className="flex items-center gap-2 text-base font-semibold text-zinc-900 dark:text-zinc-50">
-              <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-zinc-100 text-zinc-600 dark:bg-zinc-800 dark:text-zinc-300">
-                <Icon name="clock" className="h-4 w-4" />
-              </span>
+            <h2 className="font-serif text-xl font-semibold text-zinc-900 dark:text-zinc-50">
               Deadline mendekat
             </h2>
             <Link
@@ -481,13 +654,10 @@ export default function DashboardPage() {
         {/* Target minggu ini — angka besar + progres */}
         <section
           aria-label="Target belajar minggu ini"
-          className="animate-rise-in anim-delay-5 min-w-0 rounded-2xl border border-zinc-200 bg-white p-5 md:col-span-5 dark:border-zinc-800 dark:bg-zinc-900"
+          className="animate-rise-in anim-delay-5 min-w-0 rounded-2xl border border-zinc-200 bg-white p-5 md:col-span-7 dark:border-zinc-800 dark:bg-zinc-900"
         >
           <div className="flex items-baseline justify-between gap-2">
-            <h2 className="flex items-center gap-2 text-base font-semibold text-zinc-900 dark:text-zinc-50">
-              <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-zinc-100 text-zinc-600 dark:bg-zinc-800 dark:text-zinc-300">
-                <Icon name="target" className="h-4 w-4" />
-              </span>
+            <h2 className="font-serif text-xl font-semibold text-zinc-900 dark:text-zinc-50">
               Target minggu ini
             </h2>
             <Link
@@ -500,7 +670,7 @@ export default function DashboardPage() {
           {weekGoal ? (
             <div className="mt-4">
               <p className="flex flex-wrap items-baseline gap-x-2">
-                <span className="text-5xl font-bold tracking-tight text-zinc-900 tabular-nums dark:text-zinc-50">
+                <span className="font-serif text-5xl font-semibold tracking-tight text-zinc-900 tabular-nums dark:text-zinc-50">
                   {formatHours(minutesThisWeek)}
                 </span>
                 <span className="text-sm text-zinc-500 dark:text-zinc-400">
@@ -540,13 +710,10 @@ export default function DashboardPage() {
         {/* Progres tugas — donat + legenda */}
         <section
           aria-label="Progres tugas"
-          className="animate-rise-in anim-delay-6 min-w-0 rounded-2xl border border-zinc-200 bg-white p-5 md:col-span-7 dark:border-zinc-800 dark:bg-zinc-900"
+          className="animate-rise-in anim-delay-6 min-w-0 rounded-2xl border border-zinc-200 bg-white p-5 md:col-span-12 dark:border-zinc-800 dark:bg-zinc-900"
         >
           <div className="flex items-baseline justify-between gap-2">
-            <h2 className="flex items-center gap-2 text-base font-semibold text-zinc-900 dark:text-zinc-50">
-              <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-zinc-100 text-zinc-600 dark:bg-zinc-800 dark:text-zinc-300">
-                <Icon name="tasks" className="h-4 w-4" />
-              </span>
+            <h2 className="font-serif text-xl font-semibold text-zinc-900 dark:text-zinc-50">
               Progres tugas
             </h2>
             <span className="text-sm text-zinc-500 tabular-nums dark:text-zinc-400">

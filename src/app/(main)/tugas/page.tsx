@@ -347,7 +347,7 @@ function TasksPageInner() {
   if (error) {
     return (
       <div className="space-y-6">
-        <h1 className="text-2xl font-bold tracking-tight">Tugas & Deadline</h1>
+        <h1 className="font-serif text-2xl font-semibold tracking-tight">Tugas & Deadline</h1>
         <ErrorBanner message={error} onRetry={handleRetry} />
       </div>
     );
@@ -357,7 +357,7 @@ function TasksPageInner() {
     <div className="space-y-6">
       <header className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight text-zinc-900 [text-wrap:balance] md:text-3xl dark:text-zinc-50">
+          <h1 className="font-serif text-2xl font-semibold tracking-tight text-zinc-900 [text-wrap:balance] md:text-3xl dark:text-zinc-50">
             Tugas & Deadline
           </h1>
           <p className="mt-1 text-[15px] text-zinc-500 dark:text-zinc-400">

@@ -32,11 +32,13 @@ function useIsDark(): boolean {
 
 function chartColors(dark: boolean) {
   return {
-    grid: dark ? "#27272a" : "#e4e4e7",
-    tick: dark ? "#a1a1aa" : "#71717a",
-    tooltipBg: dark ? "#18181b" : "#ffffff",
-    tooltipBorder: dark ? "#3f3f46" : "#e4e4e7",
-    tooltipText: dark ? "#fafafa" : "#18181b",
+    grid: dark ? "#232f4a" : "#efede4",
+    tick: dark ? "#8b8fa0" : "#8b8fa0",
+    tooltipBg: dark ? "#182238" : "#ffffff",
+    tooltipBorder: dark ? "#2a3550" : "#e4e0d2",
+    tooltipText: dark ? "#eceef2" : "#1a2233",
+    // Warna aksen garis/batang: navy di mode terang, biru baja di gelap.
+    accent: dark ? "#93a8d6" : "#1b2a4a",
   };
 }
 
@@ -92,9 +94,9 @@ export function GpaLineChart({
           <Line
             type="monotone"
             dataKey="ip"
-            stroke="#2563EB"
+            stroke={c.accent}
             strokeWidth={2.5}
-            dot={{ r: 4, fill: "#2563EB", strokeWidth: 0 }}
+            dot={{ r: 4, fill: c.accent, strokeWidth: 0 }}
             activeDot={{ r: 6 }}
           />
         </LineChart>
@@ -138,7 +140,7 @@ export function WeeklyStudyBarChart({
               "Belajar",
             ]}
           />
-          <Bar dataKey="hours" fill="#2563EB" radius={[6, 6, 0, 0]} maxBarSize={44} />
+          <Bar dataKey="hours" fill={c.accent} radius={[6, 6, 0, 0]} maxBarSize={44} />
         </BarChart>
       </ResponsiveContainer>
     </div>
@@ -150,9 +152,16 @@ export function WeeklyStudyBarChart({
 /* ------------------------------------------------------------------ */
 
 const DONUT_COLORS = {
-  selesai: "#2563EB",
-  proses: "#D97706",
-  belum: "#A1A1AA",
+  light: {
+    selesai: "#1b2a4a",
+    proses: "#c9a227",
+    belum: "#d8d3c2",
+  },
+  dark: {
+    selesai: "#93a8d6",
+    proses: "#e8c95a",
+    belum: "#3a445c",
+  },
 };
 
 export function TaskDonutChart({
@@ -162,6 +171,7 @@ export function TaskDonutChart({
 }) {
   const dark = useIsDark();
   const c = chartColors(dark);
+  const fills = dark ? DONUT_COLORS.dark : DONUT_COLORS.light;
   const rows = data
     .filter((d) => d.count > 0)
     .map((d) => ({
@@ -172,7 +182,7 @@ export function TaskDonutChart({
             ? "Dikerjakan"
             : "Belum dikerjakan",
       value: d.count,
-      fill: DONUT_COLORS[d.status],
+      fill: fills[d.status],
     }));
   const total = rows.reduce((sum, r) => sum + r.value, 0);
   if (total === 0) return null;

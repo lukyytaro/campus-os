@@ -178,7 +178,7 @@ export default function CariPage() {
   if (error) {
     return (
       <div className="space-y-6">
-        <h1 className="text-2xl font-bold tracking-tight">Pencarian</h1>
+        <h1 className="font-serif text-2xl font-semibold tracking-tight">Pencarian</h1>
         <ErrorBanner message={error} onRetry={handleRetry} />
       </div>
     );
@@ -187,7 +187,7 @@ export default function CariPage() {
   return (
     <div className="space-y-6">
       <header>
-        <h1 className="text-2xl font-bold tracking-tight text-zinc-900 [text-wrap:balance] md:text-3xl dark:text-zinc-50">
+        <h1 className="font-serif text-2xl font-semibold tracking-tight text-zinc-900 [text-wrap:balance] md:text-3xl dark:text-zinc-50">
           Pencarian
         </h1>
         <p className="mt-1 text-[15px] text-zinc-500 dark:text-zinc-400">
