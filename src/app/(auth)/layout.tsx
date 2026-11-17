@@ -6,7 +6,7 @@ export default function AuthLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <div className="mx-auto flex min-h-dvh w-full max-w-md flex-col justify-center px-5 py-12">
+    <div className="mx-auto flex min-h-dvh w-full max-w-md flex-col justify-center px-5 pt-[calc(env(safe-area-inset-top,0px)_+_3rem)] pb-[calc(env(safe-area-inset-bottom,0px)_+_3rem)]">
       <Link href="/login" className="flex items-center gap-2.5">
         <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-600 text-white">
           <Icon name="cap" className="h-6 w-6" />

@@ -96,7 +96,7 @@ function Logo({ compact = false }: { compact?: boolean }) {
 
 function SetupNotice() {
   return (
-    <div className="mx-auto flex min-h-dvh w-full max-w-xl flex-col justify-center px-5 py-12">
+    <div className="mx-auto flex min-h-dvh w-full max-w-xl flex-col justify-center px-5 pt-[calc(env(safe-area-inset-top,0px)_+_3rem)] pb-[calc(env(safe-area-inset-bottom,0px)_+_3rem)]">
       <Logo />
       <h1 className="mt-8 text-2xl font-bold tracking-tight text-zinc-900 [text-wrap:balance] dark:text-zinc-50">
         Supabase belum dikonfigurasi
@@ -295,7 +295,7 @@ export function AppShell({ children }: { children: ReactNode }) {
 
   if (status === "error") {
     return (
-      <div className="mx-auto flex min-h-dvh w-full max-w-xl flex-col justify-center px-5 py-12">
+      <div className="mx-auto flex min-h-dvh w-full max-w-xl flex-col justify-center px-5 pt-[calc(env(safe-area-inset-top,0px)_+_3rem)] pb-[calc(env(safe-area-inset-bottom,0px)_+_3rem)]">
         <Logo />
         <h1 className="mt-8 text-2xl font-bold tracking-tight text-zinc-900 [text-wrap:balance] dark:text-zinc-50">
           Tidak dapat terhubung ke Supabase
@@ -333,7 +333,7 @@ export function AppShell({ children }: { children: ReactNode }) {
 
   if (status !== "ready" || !user || !profile) {
     return (
-      <div className="mx-auto flex min-h-dvh w-full max-w-3xl flex-col gap-4 px-5 py-8">
+      <div className="mx-auto flex min-h-dvh w-full max-w-3xl flex-col gap-4 px-5 pt-[calc(env(safe-area-inset-top,0px)_+_2rem)] pb-[calc(env(safe-area-inset-bottom,0px)_+_2rem)]">
         <div className="flex items-center gap-3">
           <Skeleton className="h-9 w-9 rounded-lg" />
           <Skeleton className="h-6 w-32" />
@@ -431,8 +431,12 @@ export function AppShell({ children }: { children: ReactNode }) {
           </div>
         </aside>
 
-        {/* Header mobile */}
-        <header className="sticky top-0 z-40 flex items-center justify-between gap-3 border-b border-zinc-200 bg-white/95 px-4 py-3 backdrop-blur md:hidden dark:border-zinc-800 dark:bg-zinc-900/95">
+        {/* Header mobile — padding atas = inset status bar + 0,75rem.
+            WebView Capacitor berjalan edge-to-edge (Android 15+), jadi
+            konten di y=0 tertutup status bar; tanpa inset ini logo dan
+            judul tertumpuk jam/baterai. Di browser desktop inset = 0
+            sehingga tampilan tidak berubah. */}
+        <header className="sticky top-0 z-40 flex items-center justify-between gap-3 border-b border-zinc-200 bg-white/95 px-4 pt-[calc(env(safe-area-inset-top,0px)_+_0.75rem)] pb-3 backdrop-blur md:hidden dark:border-zinc-800 dark:bg-zinc-900/95">
           <Logo />
           <div className="flex items-center gap-1">
             <Link

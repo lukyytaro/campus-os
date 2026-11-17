@@ -9,11 +9,13 @@ import {
   useRef,
   useState,
   type ButtonHTMLAttributes,
+  type FocusEvent,
   type InputHTMLAttributes,
   type ReactNode,
   type SelectHTMLAttributes,
   type TextareaHTMLAttributes,
 } from "react";
+import { createPortal } from "react-dom";
 import { Icon } from "./icons";
 
 /* ------------------------------------------------------------------ */
@@ -286,9 +288,15 @@ export function Modal({
 
   if (!open) return null;
 
-  return (
+  // Dirender lewat portal ke document.body: Modal dipakai di dalam halaman
+  // yang berada di bawah wrapper animasi AppShell — tanpa portal, backdrop
+  // `fixed inset-0` akan terperangkap di stacking context wrapper itu
+  // (hanya menutupi area konten, tampak seperti blok abu-abu) dan kalah
+  // dari header/bottom nav (z-40). Portal menjamin overlay selalu menutupi
+  // seluruh viewport dan berada di atas segalanya.
+  return createPortal(
     <div
-      className="fixed inset-0 z-50 flex items-end justify-center bg-zinc-950/50 p-0 backdrop-blur-[2px] sm:items-center sm:p-6"
+      className="fixed inset-0 z-50 flex items-end justify-center bg-black/60 p-0 sm:items-center sm:p-6"
       onClick={onClose}
       role="presentation"
     >
@@ -299,6 +307,17 @@ export function Modal({
         aria-label={title}
         tabIndex={-1}
         onClick={(e) => e.stopPropagation()}
+        onFocus={(e: FocusEvent<HTMLDivElement>) => {
+          // Bila keyboard terbuka, browser tidak selalu menggeser panel
+          // yang bisa di-scroll: pastikan kontrol yang fokus tetap
+          // terlihat di dalam panel.
+          const target = e.target as HTMLElement;
+          if (target && target !== panelRef.current) {
+            window.setTimeout(() => {
+              target.scrollIntoView({ block: "nearest" });
+            }, 120);
+          }
+        }}
         className={`max-h-[92dvh] w-full overflow-y-auto rounded-t-2xl bg-white shadow-xl outline-none sm:rounded-2xl dark:bg-zinc-900 ${
           wide ? "sm:max-w-2xl" : "sm:max-w-lg"
         }`}
@@ -316,9 +335,10 @@ export function Modal({
             <Icon name="x" className="h-5 w-5" />
           </button>
         </div>
-        <div className="px-5 py-5">{children}</div>
+        <div className="px-5 pt-5 pb-[calc(env(safe-area-inset-bottom,0px)_+_1.25rem)]">{children}</div>
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }
 
